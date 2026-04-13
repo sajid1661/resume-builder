@@ -21,7 +21,7 @@ app.use("/api/user", userRouter);
 app.use("/api/resume", resumeRouter);
 
 app.get("/", (req, res) => {
-  res.send("Home Page");
+  res.send("backend is running");
 });
 
 app.listen(PORT, () => {
