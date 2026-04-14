@@ -1,7 +1,6 @@
 
 import resumeModel from "../models/resumeModel.js";
 const createResume = async (req, res) => {
-  const resumeData = req.body;
   try{
     const resume = await resumeModel.create({...req.body, userId: req.userId});
     res.status(201).json({
@@ -50,8 +49,7 @@ const editResume = async (req, res) => {
   const updatedData = req.body;
 
   try {
-    const result = await resumeModel.findOneAndUpdate({ _id: resumeId}, updatedData, { new: true });
-    console.log("Updated resume:", result);
+    const result = await resumeModel.findOneAndUpdate({ _id: resumeId}, updatedData, { returnDocument: "after" });
     if (result) {
       res.status(200).json({ success: true, message: "Resume updated successfully.", resume: result });
     } else {
