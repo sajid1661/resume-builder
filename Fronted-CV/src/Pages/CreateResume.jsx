@@ -206,8 +206,8 @@ export default function ResumeBuilder() {
                 </div>
               </div>
               <div>
-                <label className={labelClass}>LinkedIn Profile</label>
-                <input className={inputClass} value={data.linkedin} onChange={set("linkedin")} placeholder="linkedin.com/in/yourname" />
+                <label className={labelClass}>Github|LinkedIn Profile</label>
+                <input className={inputClass} value={data.linkedin} onChange={set("linkedin")} placeholder="github.com/yourname | linkedin.com/in/yourname" />
               </div>
             </div>
           </div>

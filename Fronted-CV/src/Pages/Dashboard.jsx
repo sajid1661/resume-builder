@@ -1,4 +1,4 @@
-import React, { useContext, useEffect} from 'react'
+import React, { useContext} from 'react'
 import ResumeCard from '../Components/ResumeCard';
 import { ShopContext } from '../Context/ShopContext';
 import { Link } from 'react-router-dom';
@@ -22,12 +22,12 @@ const Dashboard = () => {
             <button className="px-4 py-2 bg-black text-white rounded-md hover:cursor-pointer">Create New Resume</button>
           </Link>
       </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {
             resumeData?.length>0 ?
           resumeData.map((resume) => (
-            <Link key={resume._id}  to={`/resume/${resume._id}`} className="block">
-              <ResumeCard name={resume.fullName} experience={resume.experience.length>0 ? resume.experience[0]: null} />
+            <Link key={resume._id}  to={`/resume/${resume._id}`} className="">
+              <ResumeCard resume={resume} />
             </Link>
           )):(
             <div className="col-span-4 text-center">

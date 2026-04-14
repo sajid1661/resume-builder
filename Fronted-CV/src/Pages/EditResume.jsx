@@ -207,8 +207,8 @@ export default function EditResume() {
                 </div>
               </div>
               <div>
-                <label className={labelClass}>LinkedIn Profile</label>
-                <input className={inputClass} name="linkedin" value={formData.linkedin} onChange={setField('linkedin')} placeholder="linkedin.com/in/yourname" />
+                <label className={labelClass}>Github|LinkedIn Profile</label>
+                <input className={inputClass} name="linkedin" value={formData.linkedin} onChange={setField('linkedin')} placeholder="github.com/yourname | linkedin.com/in/yourname" />
               </div>
             </div>
           </div>
