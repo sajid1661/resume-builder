@@ -35,7 +35,7 @@ export default function Navbar() {
 
                     {isLoggedIn ? (
                         <>
-                            <button onClick={() => { setToken(null); navigate('/login') }}
+                            <button onClick={() => { setToken(null), localStorage.removeItem('token'); navigate('/login') }}
                                 className="text-sm text-white bg-black px-4 py-1.5 rounded hover:bg-gray-800 transition-colors">
                                 Logout
                             </button>
@@ -84,7 +84,7 @@ export default function Navbar() {
                         hover:bg-black hover:text-white transition-colors">
                                 Create Resume
                             </Link>
-                            <button onClick={() => { setIsLoggedIn(false); setToken(null); navigate('/login'); setMenuOpen(!menuOpen) }}
+                            <button onClick={() => { setIsLoggedIn(false); setToken(null); localStorage.removeItem('token'); navigate('/login'); setMenuOpen(!menuOpen) }}
                                 className="h-8 sm:inline-flex items-center text-sm
                         text-black border border-black px-4 py-1 rounded
                         hover:bg-black hover:text-white transition-colors">

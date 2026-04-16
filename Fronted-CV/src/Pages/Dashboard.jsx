@@ -1,17 +1,12 @@
-import React, { useContext, useEffect} from 'react'
+import React, { useContext} from 'react'
 import ResumeCard from '../Components/ResumeCard';
 import { ShopContext } from '../Context/ShopContext';
 import { Link } from 'react-router-dom';
-import { toast } from 'react-toastify';
 
 
 const Dashboard = () => {
   const { resumeData, token} = useContext(ShopContext);
-useEffect(() => {
-  if (!token) {
-    toast.error("Unauthorized access - please login.");
-  }
-}, [token]);
+
 
   if(!token){
     return (

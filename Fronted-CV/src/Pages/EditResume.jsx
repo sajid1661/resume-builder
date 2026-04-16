@@ -74,6 +74,7 @@ export default function EditResume() {
   const [formData, setFormData] = useState(empty);
   const [skillInput, setSkillInput] = useState('');
   const [languageInput, setLanguageInput] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // validation state
   const [errors, setErrors] = useState({});
@@ -270,6 +271,8 @@ export default function EditResume() {
       return;
     }
 
+    if(loading) return; // prevent multiple submissions;
+    setLoading(true);
     try {
       const config = { headers: { Authorization: token ? `Bearer ${token}` : undefined } };
       const res = await axios.put(`${backendUrl}/api/resume/edit-resume/${id}`, formData, config);
@@ -293,9 +296,10 @@ export default function EditResume() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-indigo-50 to-slate-100 font-sans">
-      <div className="text-center py-10 px-4">
-        <h1 className="text-4xl font-extrabold text-black tracking-tight">Edit Your <span className="text-black">CV</span></h1>
-        <p className="mt-2 text-black/60 text-sm max-w-md mx-auto">Modify the fields below to update your resume.</p>
+      <div className="flex flex-col items-center sm:flex-row justify-around py-4 sm:py-7 px-4">
+        <h1 className=" text-2xl sm:text-2xl md:text-4xl font-extrabold text-black tracking-tight">Edit Your <span className="text-black">CV</span></h1>
+        <p className="my-auto text-black/60 text-sm max-w-md">Modify the fields below to update your resume.</p>
+        <button onClick={() => navigate(-1)} className="w-fit text-lg font-semibold px-8 sm:px-11 py-2 bg-black text-white rounded-2xl cursor-pointer">← Back</button>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-16 flex flex-col lg:flex-row gap-6 items-start">
@@ -474,14 +478,14 @@ export default function EditResume() {
             <div className="p-8 text-black">
               <div className="text-center mb-4">
                 <h1 className="text-3xl font-bold text-black tracking-tight leading-tight">{formData.fullName || 'Your Name'}</h1>
-                <p className="mt-2 text-xs text-black/60 flex flex-wrap gap-x-3 gap-y-1">
+                <p className="mt-2 text-xs text-black/60 flex justify-center items-center flex-wrap gap-x-3 gap-y-1">
                   {formData.email && <span>{formData.email}</span>}
                   {formData.email && formData.phone && <span className="text-slate-300">|</span>}
                   {formData.phone && <span>{formData.phone}</span>}
                   {formData.phone && formData.location && <span className="text-slate-300">|</span>}
                   {formData.location && <span>{formData.location}</span>}
                   {formData.location && formData.linkedin && <span className="text-slate-300">|</span>}
-                  {formData.linkedin && <span className="text-black">{formData.linkedin}</span>}
+                  {formData.linkedin && <a href={formData.linkedin} className="text-blue-500 hover:underline">{formData.linkedin}</a>}
                 </p>
               </div>
 

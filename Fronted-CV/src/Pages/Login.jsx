@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import axios from 'axios'
 import { ShopContext } from "../Context/ShopContext";
 import { toast } from "react-toastify";
@@ -15,8 +15,8 @@ const Login = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const { backendUrl, navigate, token, setToken, setCurrentState,currentState,trigger,setTrigger } = useContext(ShopContext);
-
+    const { backendUrl, navigate, setToken, setCurrentState,currentState,trigger,setTrigger } = useContext(ShopContext);
+    const [loading, setLoading] = useState(false);
     // validation state
     const [errors, setErrors] = useState({});
     const [touched, setTouched] = useState({});
@@ -58,17 +58,21 @@ const Login = () => {
 
     const onSubmitHandler = async (e) => {
         e.preventDefault();
-
         if (!validateAll()) {
             toast.error('Please fix validation errors before submitting.');
             return;
         }
+
+        if(loading) return; // Prevent multiple submissions
+
+        setLoading(true);
 
         try {
             if (currentState == 'Login') {
                 const response = await axios.post(backendUrl + '/api/user/login', { email, password })
                 if (response.data.success) {
                     setToken(response.data.token);
+                    localStorage.setItem('token', response.data.token);
                     toast.success(response.data.message);
                 } else {
                     toast.error(response.data.message);
@@ -78,6 +82,7 @@ const Login = () => {
                 const response = await axios.post(backendUrl + '/api/user/register', { name, email, password })
                 if (response.data.success) {
                     setToken(response.data.token);
+                    localStorage.setItem('token', response.data.token);
                     toast.success(response.data.message);
                 } else {
                     toast.error(response.data.message);
@@ -129,7 +134,7 @@ const Login = () => {
                     <p onClick={stateHandler} className="cursor-pointer">{trigger == true ? 'Login Here' : 'Create Account'}</p>
                 </div>
                 <div>
-                    <button type="submit" className="bg-black/75 hover:bg-black/90 text-white w-30 px-3 py-1.5 rounded-lg cursor-pointer text-lg">{currentState == 'Login' ? 'Login' : 'Sign Up'}</button>
+                    <button type="submit"  className="bg-black/75 hover:bg-black/90 text-white w-30 px-3 py-1.5 rounded-lg cursor-pointer text-lg">{currentState == 'Login' ? 'Login' : 'Sign Up'}</button>
                 </div>
             </form>
         </div>

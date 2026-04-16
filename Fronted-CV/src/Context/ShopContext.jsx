@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { createContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -9,7 +9,7 @@ export const ShopContext = createContext(null);
 const ShopContextProvider = (props) => {
 
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
-  const [token, setToken] = useState('');
+  const [token, setToken] = useState(() => localStorage.getItem('token') || null);
   const [currentState, setCurrentState] = useState('Login');
   const [trigger, setTrigger] = useState(false);
   const [resumeData, setResumeData] = useState(null);
@@ -17,7 +17,7 @@ const ShopContextProvider = (props) => {
 
   const fetchResumes = async () => {
     try {
-      const response = await axios.get(backendUrl + '/api/resume/get-resumes', { headers: { token } })
+      const response = await axios.get(`${backendUrl}/api/resume/get-resumes`, { headers: { token } });
       if (response.data.success) {
         if (response.data.resumes.length === 0) {
           toast.info("No resumes found. Create your first resume!");
@@ -31,9 +31,12 @@ const ShopContextProvider = (props) => {
 
   useEffect(() => {
     if (token) {
-      fetchResumes();
-    }
+     fetchResumes();
+    } else {
+   navigate('/login');
+}
   }, [token]);
+
 
   const value = {
     backendUrl,

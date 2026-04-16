@@ -748,7 +748,7 @@ export default function ResumeBuilder() {
                     <span className="text-slate-300">|</span>
                   )}
                   {data.linkedin && (
-                    <span className="text-black">{data.linkedin}</span>
+                    <a href={data.linkedin} className="text-blue-500 hover:underline">{data.linkedin}</a>
                   )}
                 </p>
               </div>

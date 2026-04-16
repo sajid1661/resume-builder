@@ -16,7 +16,7 @@ export default function ResumeDetail() {
   if (!resume) {
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <button onClick={() => navigate(-1)} className="mb-4 text-sm text-black/60 hover:underline">← Back</button>
+        <button onClick={() => navigate(-1)} className="w-fit text-lg font-semibold px-8 sm:px-11 py-2 bg-gray-100 text-black rounded-2xl cursor-pointer hover:bg-gray-300">← Back</button>
         <div className="bg-white border border-gray-200 rounded-lg shadow-md p-6">
           <p className="text-left text-sm text-black/70">Resume not found.</p>
         </div>
@@ -85,7 +85,7 @@ export default function ResumeDetail() {
 
   pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
   pdf.save("resume.pdf");
-};
+}
 
   return (
     <div className="max-w-4xl mx-auto max-[400px]:p-3 p-6">
