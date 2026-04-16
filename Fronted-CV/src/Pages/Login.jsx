@@ -1,12 +1,51 @@
 import { useContext, useEffect, useState } from "react";
 import axios from 'axios'
 import { ShopContext } from "../Context/ShopContext";
+import { toast } from "react-toastify";
+
+const errorClass = 'text-xs text-red-500 text-left w-full sm:w-100 m-auto ';
+const invalidBorder = '!border-red-400';
+
+const FieldError = ({ field, errors, touched }) =>
+  errors[field] && touched[field] ? (
+    <p className={errorClass}>{errors[field]}</p>
+  ) : null;
 
 const Login = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const { backendUrl, navigate, token, setToken, setCurrentState,currentState,trigger,setTrigger } = useContext(ShopContext);
+
+    // validation state
+    const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
+
+    const validators = {
+        email: (v) => {
+            const s = (v || '').trim();
+            return /^[A-Za-z0-9._%+-]+@gmail\.com$/i.test(s)
+              ? ''
+              : 'Email must be a Gmail address (example@gmail.com).';
+        },
+        password: (v) => (v && v.length >= 8 ? '' : 'Password must be at least 8 characters.'),
+    };
+
+    const validateField = (field, value) => {
+        if (!validators[field]) return;
+        const msg = validators[field](value);
+        setErrors(prev => ({ ...prev, [field]: msg }));
+    };
+
+    const validateAll = () => {
+        const next = {
+            email: validators.email(email),
+            password: validators.password(password),
+        };
+        setErrors(next);
+        setTouched({ email: true, password: true });
+        return Object.values(next).every(e => e === '');
+    };
 
     const stateHandler = () => {
 
@@ -19,35 +58,38 @@ const Login = () => {
 
     const onSubmitHandler = async (e) => {
         e.preventDefault();
+
+        if (!validateAll()) {
+            toast.error('Please fix validation errors before submitting.');
+            return;
+        }
+
         try {
             if (currentState == 'Login') {
                 const response = await axios.post(backendUrl + '/api/user/login', { email, password })
                 if (response.data.success) {
                     setToken(response.data.token);
-                    alert(response.data.message);
+                    toast.success(response.data.message);
                 } else {
-                    alert(response.data.message);
+                    toast.error(response.data.message);
+                    return navigate('/login');
                 }
             } else {
                 const response = await axios.post(backendUrl + '/api/user/register', { name, email, password })
                 if (response.data.success) {
                     setToken(response.data.token);
-                    alert(response.data.message);
+                    toast.success(response.data.message);
                 } else {
-                    alert(response.data.message);
+                    toast.error(response.data.message);
+                    return navigate('/login');
                 }
             }
         } catch (error) {
-            alert(error.message);
+            toast.error(error.message);
+            return navigate('/login');
         }
+        navigate('/');
     }
-
-    useEffect(() => {
-        if (token) {
-            navigate('/');
-        }
-    }, [token]);
-
 
 
     return (
@@ -57,10 +99,30 @@ const Login = () => {
                     <h1 className="text-4xl">{currentState}</h1>
                     <hr className="border-none w-10 h-[1.5px] bg-gray-800 " />
                 </div>
-                <div className="w-full flex flex-col ">
-                    {currentState == 'Sign Up' && (<input type='text' onChange={(e) => setName(e.target.value)} name='name' placeholder="Name" required className="w-full sm:w-100 m-auto mb-4 px-3 py-1.5 border" />)}
-                    <input type="text" onChange={(e) => setEmail(e.target.value)} name="email" id="" placeholder="Email" required className="w-full sm:w-100 m-auto px-3 py-1.5 mb-4 border" />
-                    <input type="password" onChange={(e) => setPassword(e.target.value)} name="password" placeholder="Password" required className=" w-full sm:w-100 m-auto px-3 py-1.5 border " />
+                <div className="w-full flex flex-col gap-3 ">
+                    {currentState == 'Sign Up' && (
+                      <input type='text' onChange={(e) => setName(e.target.value)} name='name' placeholder="Name" required className="w-full sm:w-100 m-auto mb-4 px-3 py-1.5 border" />
+                    )}
+
+                    <div className='mb-4'>
+                      <input type="email"
+                        onChange={(e) => { setEmail(e.target.value); validateField('email', e.target.value); }}
+                        onBlur={() => { setTouched(prev => ({ ...prev, email: true })); validateField('email', email); }}
+                        name="email" id="" placeholder="Email" required
+                        className={`w-full sm:w-100 m-auto px-3 py-1.5 border ${touched.email && errors.email ? invalidBorder : ''}`}
+                      />
+                       <FieldError field="email" errors={errors} touched={touched} />
+                    </div>
+
+                    <div>
+                      <input type="password"
+                        onChange={(e) => { setPassword(e.target.value); validateField('password', e.target.value); }}
+                        onBlur={() => { setTouched(prev => ({ ...prev, password: true })); validateField('password', password); }}
+                        name="password" placeholder="Password" required
+                        className={` w-full sm:w-100 m-auto px-3 py-1.5 border ${touched.password && errors.password ? invalidBorder : ''}`}
+                      />
+                       <FieldError field="password" errors={errors} touched={touched} />
+                    </div>
                 </div>
                 <div className="w-full sm:w-100 flex justify-between">
                     <p className="cursor-pointer">Farget Password</p>

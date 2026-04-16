@@ -4,6 +4,7 @@ import { ShopContext } from '../Context/ShopContext.jsx';
 import axios from 'axios';
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import {toast} from 'react-toastify';
 
 export default function ResumeDetail() {
   const { resumeData, navigate, backendUrl, token, fetchResumes } = useContext(ShopContext);
@@ -42,15 +43,15 @@ export default function ResumeDetail() {
     try {
       const response = await axios.delete(`${backendUrl}/api/resume/resumes/${resumeId}`, { headers: { token } });
       if (response.data.success) {
+        toast.error("Resume deleted successfully.");
         fetchResumes();
-        alert("Resume deleted successfully.");
         navigate("/");
       } else {
-        alert("Failed to delete resume.");
+        toast.error("Failed to delete resume.");
       }
     } catch (error) {
       console.error("Error deleting resume:", error);
-      alert("Failed to delete resume.");
+      toast.error("Failed to delete resume.");
     }
   };
 
@@ -87,14 +88,19 @@ export default function ResumeDetail() {
 };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
-
-      <div className="bg-white text-black border border-gray-200 rounded-lg shadow-md p-6" id="resume-preview">
+    <div className="max-w-4xl mx-auto max-[400px]:p-3 p-6">
+      <div className=" flex gap-3 justify-between mb-4 ">
+        <button onClick={() => navigate(-1)} className="w-fit text-lg font-semibold px-8 sm:px-11 py-2 bg-gray-100 text-black rounded-2xl cursor-pointer hover:bg-gray-300">← Back</button>
+        <button onClick={handleDownload} className="w-fit text-lg font-semibold px-2 sm:px-6 py-2 bg-gray-100 text-black rounded-2xl cursor-pointer hover:bg-gray-300">
+          Download CV
+        </button>
+        </div>
+      <div className="bg-white text-black border border-gray-200 rounded-lg shadow-md max-[400px]:p-3 p-6" id="resume-preview">
         {/* Header */}
         <div className="mb-4 text-left">
-          <h1 className="text-center text-3xl font-bold text-black leading-tight">{fullName || 'Your Name'}</h1>
+          <h1 className="text-center max-[400px]:text-2xl text-3xl font-bold text-black leading-tight">{fullName || 'Your Name'}</h1>
 
-          <p className="mt-2  text-xs text-black/60 flex justify-center flex-wrap gap-x-3 gap-y-1">
+          <p className="mt-2  text-xs sm:text-base text-black/60 flex justify-center flex-wrap gap-x-3 gap-y-1">
             {email && <span>{email}</span>}
             {email && phone && <span className="text-black/30">|</span>}
             {phone && <span>{phone}</span>}
@@ -102,7 +108,7 @@ export default function ResumeDetail() {
             {location && <span>{location}</span>}
             {location && linkedin && <span className="text-black/30">|</span>}
             {linkedin && (
-              <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noreferrer" className="text-xs text-blue-500 hover:underline">
+              <a href={linkedin.startsWith('http') ? linkedin : `https://${linkedin}`} target="_blank" rel="noreferrer" className="text-xs sm:text-sm text-blue-500 hover:underline">
                 {linkedin}
               </a>
             )}
@@ -178,7 +184,7 @@ export default function ResumeDetail() {
                           )}
                           </div>
                           <div className="flex justify-between items-baseline flex-wrap gap-1">
-                            <span className="text-sm font-semibold text-slate-900">
+                            <span className="max-[400px]:text-xs     text-sm font-semibold text-slate-900">
                               {edu.degree || "—"}
                             </span>
                             <span className="text-xs text-slate-400">
@@ -214,15 +220,9 @@ export default function ResumeDetail() {
           </div>
         )}
       </div>
-      <div className="mt-6 flex justify-around gap-3">
-        <div className="">
-          <button onClick={() => navigate(-1)} className="px-12 py-2 bg-gray-500 text-white rounded-2xl cursor-pointer hover:bg-gray-700">← Back</button>
-        </div>
-        <button onClick={handleDownload} className="px-6 py-2 bg-gray-500 text-white rounded-2xl cursor-pointer hover:bg-gray-700">
-          Download CV
-        </button>
-        <button onClick={() => navigate(`/edit-resume/${id}`)} className="px-15 py-2 bg-blue-500 text-white rounded-2xl cursor-pointer hover:bg-blue-700">Edit</button>
-        <button onClick={() => handleDelete(id)} className="px-15 py-2 bg-red-600 text-white rounded-2xl cursor-pointer hover:bg-red-700">
+      <div className="mt-6 sm:text-sm md:text-base flex items-center justify-between sm:justify-around">
+        <button onClick={() => navigate(`/edit-resume/${id}`)} className="px-11 sm:px-14 py-2 bg-blue-500 text-white rounded-2xl cursor-pointer hover:bg-blue-700">Edit</button>
+        <button onClick={() => handleDelete(id)} className="px-11  sm:px-14 py-2 bg-red-600 text-white rounded-2xl cursor-pointer hover:bg-red-700">
           Delete
         </button>
       </div>

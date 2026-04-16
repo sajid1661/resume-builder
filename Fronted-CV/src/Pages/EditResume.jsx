@@ -4,6 +4,39 @@ import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { ShopContext } from '../Context/ShopContext.jsx';
+import { toast } from 'react-toastify';
+
+// validation helpers (copied from CreateResume)
+const validators = {
+  email: (v) => {
+    const s = (v || '').trim();
+    return /^[A-Za-z0-9._%+-]+@gmail\.com$/i.test(s)
+      ? ''
+      : 'Email must be a Gmail address (example@gmail.com).';
+  },
+
+  phone: (v) => (/^\d{11}$/.test((v || '').trim()) ? '' : 'Phone must be exactly 11 digits (e.g. 03001122333).'),
+
+  linkedin: (v) => {
+    const s = (v || '').trim();
+    if (!s) return '';
+    const re = /^(https?:\/\/)?(www\.)?(github\.com\/[A-Za-z0-9_.-]+\/?|linkedin\.com\/(in|pub|profile)\/[A-Za-z0-9_-]+\/?)$/i;
+    return re.test(s)
+      ? ''
+      : 'Enter a valid GitHub or LinkedIn profile URL (e.g. https://github.com/yourname or https://linkedin.com/in/yourname).';
+  },
+
+  skills: (arr) => (Array.isArray(arr) && arr.length > 0 ? '' : 'Add at least one skill.'),
+
+  languages: (arr) => (Array.isArray(arr) && arr.length > 0 ? '' : 'Add at least one language.'),
+
+  education: (arr) =>
+    Array.isArray(arr) &&
+    arr.length > 0 &&
+    arr.some((e) => e.degree?.trim() && e.institution?.trim() && e.startDate?.trim() && e.endDate?.trim())
+      ? ''
+      : 'Add at least one complete education entry.',
+};
 
 const sectionHeading = (label) => (
   <div className="mb-3">
@@ -15,6 +48,10 @@ const sectionHeading = (label) => (
 const inputClass =
   'w-full border border-black/10 rounded-md px-3 py-2 text-sm text-black bg-white placeholder-black/40 focus:outline-none focus:ring-2 focus:ring-black/10 focus:border-transparent transition';
 const labelClass = 'text-left block text-xs font-semibold text-black/60 mb-1 uppercase tracking-wide';
+const errorClass = 'mt-1 text-xs text-red-500 text-left';
+const invalidBorder = '!border-red-400 focus:!ring-red-300';
+
+const FieldError = ({ field, errors, touched }) => (errors[field] && touched[field] ? <p className={errorClass}>{errors[field]}</p> : null);
 
 export default function EditResume() {
   const { id } = useParams();
@@ -38,11 +75,14 @@ export default function EditResume() {
   const [skillInput, setSkillInput] = useState('');
   const [languageInput, setLanguageInput] = useState('');
 
+  // validation state
+  const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
+
   // load resume into form when resumeData or id changes
   useEffect(() => {
     const r = (resumeData || []).find((x) => String(x._id) === String(id));
     if (r) {
-      // ensure arrays exist
       setFormData({
         fullName: r.fullName || '',
         email: r.email || '',
@@ -52,63 +92,107 @@ export default function EditResume() {
         summary: r.summary || '',
         skills: Array.isArray(r.skills) ? r.skills.slice() : [],
         languages: Array.isArray(r.languages) ? r.languages.slice() : [],
-        experience: Array.isArray(r.experience) ? r.experience.map(e => ({
-          title: e.title || '',
-          company: e.company || '',
-          startDate: e.startDate || '',
-          endDate: e.endDate || '',
-          description: e.description || ''
-        })) : [],
-        education: Array.isArray(r.education) ? r.education.map(ed => ({
-          degree: ed.degree || '',
-          institution: ed.institution || '',
-          startDate: ed.startDate || '',
-          endDate: ed.endDate || '',
-          description: ed.description || ''
-        })) : [],
-        certificates: r.certificates || ''
+        experience: Array.isArray(r.experience)
+          ? r.experience.map((e) => ({
+              title: e.title || '',
+              company: e.company || '',
+              startDate: e.startDate || '',
+              endDate: e.endDate || '',
+              description: e.description || '',
+            }))
+          : [],
+        education: Array.isArray(r.education)
+          ? r.education.map((ed) => ({
+              degree: ed.degree || '',
+              institution: ed.institution || '',
+              startDate: ed.startDate || '',
+              endDate: ed.endDate || '',
+              description: ed.description || '',
+            }))
+          : [],
+        certificates: r.certificates || '',
       });
     }
   }, [resumeData, id]);
 
-  // generic setter for top-level string fields
-  const setField = useCallback((field) => (e) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, [field]: value }));
+  // validation helpers
+  const validateField = useCallback((field, value) => {
+    if (!validators[field]) return;
+    const msg = validators[field](value);
+    setErrors((prev) => ({ ...prev, [field]: msg }));
   }, []);
+
+  const validateAll = useCallback(() => {
+    const next = {
+      email: validators.email(formData.email),
+      phone: validators.phone(formData.phone),
+      linkedin: validators.linkedin(formData.linkedin),
+      skills: validators.skills(formData.skills),
+      languages: validators.languages(formData.languages),
+      education: validators.education(formData.education),
+    };
+    setErrors(next);
+    setTouched({
+      email: true,
+      phone: true,
+      linkedin: true,
+      skills: true,
+      languages: true,
+      education: true,
+    });
+    return Object.values(next).every((e) => e === '');
+  }, [formData]);
+
+  // generic setter for top-level string fields with live validation
+  const setField = useCallback(
+    (field) => (e) => {
+      const value = e.target.value;
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      if (validators[field]) validateField(field, value);
+    },
+    [validateField]
+  );
+
+  const handleBlur = useCallback(
+    (field) => () => {
+      setTouched((prev) => ({ ...prev, [field]: true }));
+      validateField(field, formData[field]);
+    },
+    [formData, validateField]
+  );
 
   // experience handlers
   const setExp = useCallback((idx, field) => (e) => {
     const value = e.target.value;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      experience: prev.experience.map((ex, i) => i === idx ? { ...ex, [field]: value } : ex)
+      experience: prev.experience.map((ex, i) => (i === idx ? { ...ex, [field]: value } : ex)),
     }));
   }, []);
 
   const addExperience = useCallback(() => {
-    setFormData(prev => ({ ...prev, experience: [...prev.experience, { title: '', company: '', startDate: '', endDate: '', description: '' }] }));
+    setFormData((prev) => ({ ...prev, experience: [...prev.experience, { title: '', company: '', startDate: '', endDate: '', description: '' }] }));
   }, []);
 
   const removeExperience = useCallback((idx) => {
-    setFormData(prev => ({ ...prev, experience: prev.experience.filter((_, i) => i !== idx) }));
+    setFormData((prev) => ({ ...prev, experience: prev.experience.filter((_, i) => i !== idx) }));
   }, []);
 
   // education handlers
   const setEdu = useCallback((idx, field) => (e) => {
     const value = e.target.value;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      education: prev.education.map((ed, i) => i === idx ? { ...ed, [field]: value } : ed)
+      education: prev.education.map((ed, i) => (i === idx ? { ...ed, [field]: value } : ed)),
     }));
   }, []);
 
   const addEducation = useCallback(() => {
-    setFormData(prev => ({ ...prev, education: [...prev.education, { degree: '', institution: '', startDate: '', endDate: '', description: '' }] }));
+    setFormData((prev) => ({ ...prev, education: [...prev.education, { degree: '', institution: '', startDate: '', endDate: '', description: '' }] }));
   }, []);
 
   const removeEducation = useCallback((idx) => {
-    setFormData(prev => ({ ...prev, education: prev.education.filter((_, i) => i !== idx) }));
+    setFormData((prev) => ({ ...prev, education: prev.education.filter((_, i) => i !== idx) }));
   }, []);
 
   // skills handlers
@@ -117,22 +201,45 @@ export default function EditResume() {
       e.preventDefault();
       const v = (skillInput || '').trim();
       if (!v) return;
-      setFormData(prev => ({ ...prev, skills: [...prev.skills, v] }));
+      setFormData((prev) => {
+        const updated = [...prev.skills, v];
+        validateField('skills', updated);
+        return { ...prev, skills: updated };
+      });
       setSkillInput('');
     }
-  }, [skillInput]);
+  }, [skillInput, validateField]);
+
+  const addSkillClick = useCallback(() => {
+    const v = (skillInput || '').trim();
+    if (!v) return;
+    setFormData((prev) => {
+      const updated = [...prev.skills, v];
+      validateField('skills', updated);
+      return { ...prev, skills: updated };
+    });
+    setSkillInput('');
+  }, [skillInput, validateField]);
 
   const removeSkill = useCallback((idx) => {
-    setFormData(prev => ({ ...prev, skills: prev.skills.filter((_, i) => i !== idx) }));
-  }, []);
+    setFormData((prev) => {
+      const updated = prev.skills.filter((_, i) => i !== idx);
+      validateField('skills', updated);
+      return { ...prev, skills: updated };
+    });
+  }, [validateField]);
 
   // languages handlers
   const addLanguageFromInput = useCallback(() => {
     const v = (languageInput || '').trim();
     if (!v) return;
-    setFormData(prev => ({ ...prev, languages: [...prev.languages, v] }));
+    setFormData((prev) => {
+      const next = [...prev.languages, v];
+      validateField('languages', next);
+      return { ...prev, languages: next };
+    });
     setLanguageInput('');
-  }, [languageInput]);
+  }, [languageInput, validateField]);
 
   const addLanguageKey = useCallback((e) => {
     if (e.key === 'Enter') {
@@ -142,8 +249,12 @@ export default function EditResume() {
   }, [addLanguageFromInput]);
 
   const removeLanguage = useCallback((idx) => {
-    setFormData(prev => ({ ...prev, languages: prev.languages.filter((_, i) => i !== idx) }));
-  }, []);
+    setFormData((prev) => {
+      const next = prev.languages.filter((_, i) => i !== idx);
+      validateField('languages', next);
+      return { ...prev, languages: next };
+    });
+  }, [validateField]);
 
   // prevent Enter from submitting form outside textareas
   const onKeyDownPrevent = (e) => {
@@ -154,29 +265,34 @@ export default function EditResume() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateAll()) {
+      toast.error('Please fix all errors before submitting.');
+      return;
+    }
+
     try {
       const config = { headers: { Authorization: token ? `Bearer ${token}` : undefined } };
       const res = await axios.put(`${backendUrl}/api/resume/edit-resume/${id}`, formData, config);
       if (res.data && res.data.success) {
-        alert('Resume updated successfully.');
+        toast.info('Resume updated successfully.');
         fetchResumes && fetchResumes();
-        navigate && navigate('/');
+        navigate && navigate(`/resume/${id}`);
       } else {
-        alert(res.data?.message || 'Failed to update resume.');
+        toast.error(res.data?.message || 'Failed to update resume.');
       }
     } catch (err) {
       console.error('Update error', err);
       if (err?.response?.status === 401) {
-        alert('Unauthorized - please login.');
+        toast.error('Unauthorized - please login.');
         navigate && navigate('/login');
         return;
       }
-      alert('Failed to update resume.');
+      toast.error('Failed to update resume.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-slate-100 font-sans">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-indigo-50 to-slate-100 font-sans">
       <div className="text-center py-10 px-4">
         <h1 className="text-4xl font-extrabold text-black tracking-tight">Edit Your <span className="text-black">CV</span></h1>
         <p className="mt-2 text-black/60 text-sm max-w-md mx-auto">Modify the fields below to update your resume.</p>
@@ -190,16 +306,18 @@ export default function EditResume() {
             <div className="flex flex-col gap-3">
               <div>
                 <label className={labelClass}>Full Name</label>
-                <input className={inputClass} name="fullName" value={formData.fullName} onChange={setField('fullName')} placeholder="Jane Doe" required />
+                <input className={`${inputClass}`} name="fullName" value={formData.fullName} onChange={setField('fullName')} placeholder="Jane Doe" required />
               </div>
               <div>
                 <label className={labelClass}>Email</label>
-                <input className={inputClass} name="email" value={formData.email} onChange={setField('email')} placeholder="jane@example.com" required />
+                <input className={`${inputClass} ${touched.email && errors.email ? invalidBorder : ''}`} name="email" value={formData.email} onChange={setField('email')} onBlur={handleBlur('email')} placeholder="jane@example.com" required />
+                <FieldError field="email" errors={errors} touched={touched} />
               </div>
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className={labelClass}>Phone</label>
-                  <input className={inputClass} name="phone" value={formData.phone} onChange={setField('phone')} placeholder="0300-8899123" required />
+                  <input className={`${inputClass} ${touched.phone && errors.phone ? invalidBorder : ''}`} name="phone" value={formData.phone} onChange={setField('phone')} onBlur={handleBlur('phone')} placeholder="0300-8899123" required />
+                  <FieldError field="phone" errors={errors} touched={touched} />
                 </div>
                 <div className="flex-1">
                   <label className={labelClass}>Location</label>
@@ -208,7 +326,8 @@ export default function EditResume() {
               </div>
               <div>
                 <label className={labelClass}>Github|LinkedIn Profile</label>
-                <input className={inputClass} name="linkedin" value={formData.linkedin} onChange={setField('linkedin')} placeholder="github.com/yourname | linkedin.com/in/yourname" />
+                <input className={`${inputClass} ${touched.linkedin && errors.linkedin ? invalidBorder : ''}`} name="linkedin" value={formData.linkedin} onChange={setField('linkedin')} onBlur={handleBlur('linkedin')} placeholder="github.com/yourname | linkedin.com/in/yourname" />
+                <FieldError field="linkedin" errors={errors} touched={touched} />
               </div>
             </div>
           </div>
@@ -222,7 +341,10 @@ export default function EditResume() {
           {/* Skills */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
             <h2 className="text-left text-sm font-bold text-black uppercase tracking-widest mb-4">Skills</h2>
-            <input className={inputClass} value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={addSkill} placeholder="Type a skill and press Enter…" />
+            <div className="flex gap-2">
+              <input className={inputClass} value={skillInput} onChange={(e) => setSkillInput(e.target.value)} onKeyDown={addSkill} placeholder="Type a skill and press Enter…" />
+              <button type="button" onClick={addSkillClick} className="px-3 py-2 bg-black text-white rounded-md">Add</button>
+            </div>
             <div className="flex flex-wrap gap-2 mt-3">
               {formData.skills.map((skill, i) => (
                 <span key={i} className="inline-flex items-center gap-1 bg-black/5 text-black text-xs font-semibold px-3 py-1 rounded-full border border-black/10">
@@ -231,6 +353,7 @@ export default function EditResume() {
                 </span>
               ))}
             </div>
+            <FieldError field="skills" errors={errors} touched={touched} />
           </div>
 
           {/* Work Experience */}
@@ -242,21 +365,21 @@ export default function EditResume() {
                   <div className="flex gap-3">
                     <div className="flex-1">
                       <label className={labelClass}>Job Title</label>
-                      <input className={inputClass} value={exp.title} onChange={setExp(i, 'title')} placeholder="Software Engineer" />
+                      <input className={inputClass} value={exp.title} required onChange={setExp(i, 'title')} placeholder="Software Engineer" />
                     </div>
                     <div className="flex-1">
                       <label className={labelClass}>Company</label>
-                      <input className={inputClass} value={exp.company} onChange={setExp(i, 'company')} placeholder="Acme Corp" />
+                      <input className={inputClass} value={exp.company} required onChange={setExp(i, 'company')} placeholder="Acme Corp" />
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <div className="flex-1">
                       <label className={labelClass}>Start Date</label>
-                      <input className={inputClass} value={exp.startDate} onChange={setExp(i, 'startDate')} placeholder="Jan 2020" />
+                      <input className={inputClass} value={exp.startDate} required onChange={setExp(i, 'startDate')} placeholder="Jan 2020" />
                     </div>
                     <div className="flex-1">
                       <label className={labelClass}>End Date</label>
-                      <input className={inputClass} value={exp.endDate} onChange={setExp(i, 'endDate')} placeholder="Present" />
+                      <input className={inputClass} value={exp.endDate} required onChange={setExp(i, 'endDate')} placeholder="Present" />
                     </div>
                   </div>
                   <div>
@@ -264,7 +387,7 @@ export default function EditResume() {
                     <textarea className={`${inputClass} resize-none`} rows={3} value={exp.description} onChange={setExp(i, 'description')} placeholder="Describe your responsibilities…" />
                   </div>
                   <div className="flex justify-end">
-                    <button type="button" onClick={() => removeExperience(i)} className="text-sm text-red-600">Remove</button>
+                    <button type="button" onClick={() => removeExperience(i)} className="text-sm text-red-600 cursor-pointer border px-3  rounded-lg hover:bg-red-600 hover:text-white">Remove</button>
                   </div>
                 </div>
               ))}
@@ -281,26 +404,26 @@ export default function EditResume() {
                   <div className="flex gap-3">
                     <div className="flex-1">
                       <label className={labelClass}>Degree</label>
-                      <input className={inputClass} value={edu.degree} onChange={setEdu(i, 'degree')} placeholder="B.Sc. Computer Science" />
+                      <input className={inputClass} value={edu.degree} required onChange={setEdu(i, 'degree')} placeholder="B.Sc. Computer Science" />
                     </div>
                     <div className="flex-1">
                       <label className={labelClass}>Institution</label>
-                      <input className={inputClass} value={edu.institution} onChange={setEdu(i, 'institution')} placeholder="MIT" />
+                      <input className={inputClass} value={edu.institution} required onChange={setEdu(i, 'institution')} placeholder="MIT" />
                     </div>
                   </div>
                   <div className="flex gap-3">
                     <div className="flex-1">
                       <label className={labelClass}>Start Date</label>
-                      <input className={inputClass} value={edu.startDate} onChange={setEdu(i, 'startDate')} placeholder="Sep 2016" />
+                      <input className={inputClass} value={edu.startDate} required onChange={setEdu(i, 'startDate')} placeholder="Sep 2016" />
                     </div>
                     <div className="flex-1">
                       <label className={labelClass}>End Date</label>
-                      <input className={inputClass} value={edu.endDate} onChange={setEdu(i, 'endDate')} placeholder="May 2020" />
+                      <input className={inputClass} value={edu.endDate} required onChange={setEdu(i, 'endDate')} placeholder="May 2020" />
                     </div>
                   </div>
                   <div>
                     <label className={labelClass}>CGPA|GPA</label>
-                    <input className={inputClass} value={edu.description} onChange={setEdu(i, 'description')} placeholder="CGPA|GPA" />
+                    <input className={inputClass} value={edu.description} required onChange={setEdu(i, 'description')} placeholder="CGPA|GPA" />
                   </div>
                   <div className="flex justify-end ">
                     <button type="button" onClick={() => removeEducation(i)} className="text-sm text-red-600 cursor-pointer border px-3  rounded-lg hover:bg-red-600 hover:text-white">Remove</button>

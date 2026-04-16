@@ -97,9 +97,16 @@ export default function ResumeCard({ resume }) {
           </div>
         )}
 
+        {/* Certificates */}
+        {certificates && (
+          <div className='mb-1'> 
+            <p className="text-[7px] font-semibold uppercase text-gray-800 leading-tight mb-0.5">Certificates</p>
+            <p className="text-[7px] text-gray-600 leading-tight truncate">{certificates}</p>
+          </div>
+        )}
         {/* Languages */}
         {languages.length > 0 && (
-          <div className='mb-1'>
+          <div >
             <p className="text-[7px] font-semibold uppercase text-gray-800 leading-tight mb-0.5">Languages</p>
             <div className="flex flex-wrap gap-[2px]">
               {languages.slice().map((l, i) => (
@@ -108,14 +115,6 @@ export default function ResumeCard({ resume }) {
                 </span>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Certificates */}
-        {certificates && (
-          <div>
-            <p className="text-[7px] font-semibold uppercase text-gray-800 leading-tight mb-0.5">Certificates</p>
-            <p className="text-[7px] text-gray-600 leading-tight truncate">{certificates}</p>
           </div>
         )}
 

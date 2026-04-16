@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 export const ShopContext = createContext(null);
 
@@ -15,26 +16,22 @@ const ShopContextProvider = (props) => {
   const navigate = useNavigate();
 
   const fetchResumes = async () => {
-      try {
-        const response = await axios.get(backendUrl + '/api/resume/get-resumes', { headers: { token } })
-        if (response.data.success) {
-          if(response.data.resumes.length === 0){
-            return setResumeData([]);
-          }
-          setResumeData(response.data.resumes);
-        } else {
-          console.error("Failed to fetch resumes");
+    try {
+      const response = await axios.get(backendUrl + '/api/resume/get-resumes', { headers: { token } })
+      if (response.data.success) {
+        if (response.data.resumes.length === 0) {
+          toast.info("No resumes found. Create your first resume!");
         }
-      } catch (error) {
-        console.error("Error fetching resumes:", error);
+        setResumeData(response.data.resumes);
       }
-    };
+    } catch (error) {
+      toast.error("Error fetching resumes:" + error.message);
+    }
+  };
 
   useEffect(() => {
     if (token) {
       fetchResumes();
-    }else{
-      setResumeData(null);
     }
   }, [token]);
 

@@ -1,3 +1,5 @@
+import 'react-toastify/dist/ReactToastify.css';
+import { ToastContainer } from "react-toastify";
 import Login from './Pages/Login'
 import Dashboard from './Pages/Dashboard'
 import CreateResume from './Pages/CreateResume'
@@ -11,6 +13,7 @@ function App() {
 
   return (
     <div>
+      <ToastContainer autoClose={3000} theme="colored" />
       <Navbar/>
       <Routes>
         <Route path='/' element={<Dashboard />} />
