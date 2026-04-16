@@ -9,7 +9,6 @@ const createResume = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating resume:", error);
-
     res.status(500).json({
       success: false,
       message: error.message,
@@ -21,9 +20,14 @@ const createResume = async (req, res) => {
 const getResumes = async (req, res) => {
   try {
     const resumes = await resumeModel.find({userId: req.userId});
-      res.status(200).json({ success: true, resumes });
+    if (resumes.length === 0) {
+      return res.status(200).json({
+        success: true,
+        resumes: [] // 👈 important
+      });
+    }
+    res.status(200).json({ success: true, resumes });
   } catch (error) {
-    console.error("Error fetching resumes:", error);
     res.status(500).json({ success: false, message: "Failed to fetch resumes." });
   }
 };

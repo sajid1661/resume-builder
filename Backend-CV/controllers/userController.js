@@ -20,7 +20,8 @@ const registerUser = async (req, res) => {
       let response = new userModel({ name, email, password: hashedPassword });
       let newUser = await response.save();
       console.log(newUser);
-      return res.json({ success: true,message:"User registered successfully", token: newUser._id });
+      const token = createToken(newUser._id);
+      return res.json({ success: true,message:"User registered successfully", token });
     }
     res.json({ success: false, message: "This email already exists" });
   } catch (error) {
