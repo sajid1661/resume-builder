@@ -14,5 +14,5 @@ Create Resume Design page
 ![Create Resume image ](./Images/Resume%20Create%20Page.png);
 
 Resume Details Design page
-![Resume Details image](./Images/Resume%20Details%20Page.png)
+![Resume Details image](./Images/Resume%20Details%20Page.png);
 
