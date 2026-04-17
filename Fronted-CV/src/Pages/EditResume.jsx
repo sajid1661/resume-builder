@@ -281,10 +281,12 @@ export default function EditResume() {
         fetchResumes && fetchResumes();
         navigate && navigate(`/resume/${id}`);
       } else {
+        setLoading(false);
         toast.error(res.data?.message || 'Failed to update resume.');
       }
     } catch (err) {
       console.error('Update error', err);
+      setLoading(false);
       if (err?.response?.status === 401) {
         toast.error('Unauthorized - please login.');
         navigate && navigate('/login');

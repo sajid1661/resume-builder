@@ -76,6 +76,7 @@ const Login = () => {
                     toast.success(response.data.message);
                 } else {
                     toast.error(response.data.message);
+                    setLoading(false);
                     return navigate('/login');
                 }
             } else {
@@ -86,11 +87,13 @@ const Login = () => {
                     toast.success(response.data.message);
                 } else {
                     toast.error(response.data.message);
+                    setLoading(false);
                     return navigate('/login');
                 }
             }
         } catch (error) {
             toast.error(error.message);
+                setLoading(false);
             return navigate('/login');
         }
         navigate('/');

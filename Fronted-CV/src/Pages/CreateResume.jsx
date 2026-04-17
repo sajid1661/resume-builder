@@ -93,6 +93,7 @@ export default function ResumeBuilder() {
   const [skillInput, setSkillInput] = useState("");
   const [languageInput, setLanguageInput] = useState("");
   const [languages, setLanguages] = useState(data.languages || []);
+  const [loading, setLoading] = useState(false);
 
   // ── Validation state ──
   const [errors, setErrors] = useState({});
@@ -296,6 +297,9 @@ export default function ResumeBuilder() {
       toast.error("Please fix all errors before submitting.");
       return;
     }
+
+    if (loading) return; // Prevent multiple submissions
+    setLoading(true);
     try {
       const response = await axios.post(
         `${backendUrl}/api/resume/create-resume`,
@@ -308,14 +312,17 @@ export default function ResumeBuilder() {
         navigate("/");
       } else {
         toast.error(response.data.message);
+        setLoading(false);
         navigate("/create-resume");
       }
     } catch (err) {
       if (err.response?.status === 401) {
         toast.error("Unauthorized access - please log in.");
+        setLoading(false);
         navigate("/login");
         return;
       }
+      setLoading(false);
       toast.error("Failed to save resume.");
     }
   };
