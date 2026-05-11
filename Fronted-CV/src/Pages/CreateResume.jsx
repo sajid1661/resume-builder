@@ -94,6 +94,8 @@ export default function ResumeBuilder() {
   const [languageInput, setLanguageInput] = useState("");
   const [languages, setLanguages] = useState(data.languages || []);
   const [loading, setLoading] = useState(false);
+  const [isSumLoading,setIsSumLoading]=useState(false);
+  const [isDesLoading,setIsDesLoading]=useState(false);
 
   // ── Validation state ──
   const [errors, setErrors] = useState({});
@@ -290,6 +292,58 @@ export default function ResumeBuilder() {
     [validateField]
   );
 
+//AI summary Generator function
+const generateSummary=async () => {
+    console.log("summary generate call in frontend");
+    if(isSumLoading) return;
+    setIsSumLoading(true);
+              try {
+                const response = await axios.post(backendUrl+'/api/ai/generator', {
+                  skills: data.skills,
+                  experience: data.experience,
+                  education: data.education,
+                  certificates: data.certificates,
+                  summary: data.summary
+                });
+                console.log(response);
+                if(response.data.success){
+                  toast.info('Summary generated successfully.');
+                  setData((prev) => ({ ...prev, summary: response.data.summary || prev.summary }));
+                }
+              } catch (error) {
+                console.error('Error generating summary:', error.message);
+              }
+              finally {
+                setIsSumLoading(false);
+              }
+
+            }
+  // generateWorkDescription function
+    const generateWorkDescription = async (index) => {
+      console.log("work description generate call in frontend");
+      if (isDesLoading) return;
+      setIsDesLoading(true);
+      try {
+        const response = await axios.post(backendUrl + '/api/ai/work-description-generator', {
+          experience: data.experience[index]
+        });
+        console.log(response);
+        if (response.data.success) {
+          toast.info('Work description AI generated successfully.');
+          setData((prev) => {
+            const updatedExperience = [...prev.experience];
+            updatedExperience[index].description = response.data.description || updatedExperience[index].description;
+            return { ...prev, experience: updatedExperience };
+          });
+        }
+      } catch (error) {
+        console.error('Error AI generating work description:', error.message);
+      } finally {
+        setIsDesLoading(false);
+      }
+    };
+
+
   // ── Submit ──
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -432,20 +486,7 @@ export default function ResumeBuilder() {
             </div>
           </div>
 
-          {/* ── Summary ── */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-            <h2 className="text-left text-sm font-bold text-black uppercase tracking-widest mb-4">
-              Summary
-            </h2>
-            <textarea
-              className={`${inputClass} resize-none`}
-              required
-              rows={4}
-              value={data.summary}
-              onChange={set("summary")}
-              placeholder="Write a short professional summary..."
-            />
-          </div>
+          
 
           {/* ── Skills ── */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
@@ -552,8 +593,10 @@ export default function ResumeBuilder() {
                       placeholder="Describe your responsibilities…"
                     />
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-around">
                     <button type="button" onClick={() => removeExperience(i)} className="text-sm text-red-600 cursor-pointer border px-3  rounded-lg hover:bg-red-600 hover:text-white">Remove</button>
+                    <button type="button" onClick={() => generateWorkDescription(i)} className={` ${data.experience[i].title && data.experience[i].company ? '' : 'hidden'} ml-2 text-sm text-black hover:text-white hover:bg-black cursor-pointer border px-3 py-1 rounded-lg `}>{isDesLoading ? 'AI Generating...' : 'AI Generate Description'}</button>
+
                   </div>
                 </div>
               ))}
@@ -663,6 +706,24 @@ export default function ResumeBuilder() {
               onChange={set("certificates")}
               placeholder="e.g. AWS Certified Developer – 2024"
             />
+          </div>
+
+          {/* ── Summary ── */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h2 className="text-left text-sm font-bold text-black uppercase tracking-widest mb-4">
+              Summary
+            </h2>
+            <textarea
+              className={`${inputClass} resize-none`}
+              required
+              rows={4}
+              value={data.summary}
+              onChange={set("summary")}
+              placeholder="Write a short professional summary..."
+            />
+            <button type="button" onClick={generateSummary} className="mt-2 px-3 py-2 bg-black text-white rounded-md cursor-pointer">
+              {isSumLoading ? "AI Generating..." : "AI Generate Summary"}
+            </button>
           </div>
 
           {/* ── Languages ── */}

@@ -5,6 +5,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { ShopContext } from '../Context/ShopContext.jsx';
 import { toast } from 'react-toastify';
+import ReactMarkDown from 'react-markdown'
 
 // validation helpers (copied from CreateResume)
 const validators = {
@@ -56,6 +57,8 @@ const FieldError = ({ field, errors, touched }) => (errors[field] && touched[fie
 export default function EditResume() {
   const { id } = useParams();
   const { resumeData = [], backendUrl, token, fetchResumes, navigate } = useContext(ShopContext);
+  const [isSumLoading,setIsSumLoading]=useState(false);
+  const [isDesLoading,setIsDesLoading]=useState(false);
 
   const empty = {
     fullName: '',
@@ -79,7 +82,6 @@ export default function EditResume() {
   // validation state
   const [errors, setErrors] = useState({});
   const [touched, setTouched] = useState({});
-
   // load resume into form when resumeData or id changes
   useEffect(() => {
     const r = (resumeData || []).find((x) => String(x._id) === String(id));
@@ -264,6 +266,77 @@ export default function EditResume() {
     }
   };
 
+//AI summary Generator function
+const generateSummary=async () => {
+    if(isSumLoading) return;
+    setIsSumLoading(true);
+              try {
+                const response = await axios.post(backendUrl+'/api/ai/generator', {
+                  skills: formData.skills,
+                  experience: formData.experience,
+                  education: formData.education,
+                  certificates: formData.certificates,
+                  summary: formData.summary
+                });
+                console.log(response);
+                if(response.data.success){
+                  toast.info('Summary generated successfully.');
+                  setFormData((prev) => ({ ...prev, summary: response.data.summary || prev.summary }));
+                }
+              } catch (error) {
+                console.error('Error generating summary:', error.message);
+              }
+              finally {
+                setIsSumLoading(false);
+              }
+
+            }
+
+  // generateWorkDescription function
+  const generateWorkDescription = async (index) => {
+    if (isDesLoading) return;
+    setIsDesLoading(true);
+    try {
+      const response = await axios.post(backendUrl + '/api/ai/work-description-generator', {
+        experience: formData.experience[index]
+      });
+      console.log(response);
+      if (response.data.success) {
+        toast.info('Work description AI generated successfully.');
+        setFormData((prev) => {
+          const updatedExperience = [...prev.experience];
+          updatedExperience[index].description = response.data.description || updatedExperience[index].description;
+          return { ...prev, experience: updatedExperience };
+        });
+      }
+    } catch (error) {
+      console.error('Error AI generating work description:', error.message);
+    } finally {
+      setIsDesLoading(false);
+    }
+  };
+
+  //ATS Score checker send formData
+  const ATSHandler=async()=>{
+    if(loading) return;
+    setLoading(true);
+    console.log("Form Data in ATSHandler: ", formData);
+    try {
+      // const config = { headers: { Authorization: token ? `Bearer ${token}` : undefined } };
+      const res = await axios.post(`${backendUrl}/api/ai/ATS-score-checker`, { resumeData: formData });
+      console.log(res.data);
+      if (res.data.success) {
+        toast.info(res.data.message);
+      }
+    } catch (error) {
+      toast.error(error.message);
+      console.error('Error checking ATS score:', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateAll()) {
@@ -300,8 +373,10 @@ export default function EditResume() {
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-indigo-50 to-slate-100 font-sans">
       <div className="flex flex-col items-center sm:flex-row justify-around py-4 sm:py-7 px-4">
         <h1 className=" text-2xl sm:text-2xl md:text-4xl font-extrabold text-black tracking-tight">Edit Your <span className="text-black">CV</span></h1>
-        <p className="my-auto text-black/60 text-sm max-w-md">Modify the fields below to update your resume.</p>
-        <button onClick={() => navigate(-1)} className="w-fit text-lg font-semibold px-8 sm:px-11 py-2 bg-black text-white rounded-2xl cursor-pointer">← Back</button>
+        <div className='flex  items-center gap-3'>
+          <p onClick={() => navigate(-1)} className="w-fit text-lg font-semibold px-4 py-2  text-black  cursor-pointer hover:underline">← Back</p>
+          <p onClick={()=> ATSHandler()} className="w-fit text-lg font-semibold px-4 py-2  text-black  cursor-pointer hover:underline">ATS Score Checker</p>
+        </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 pb-16 flex flex-col lg:flex-row gap-6 items-start">
@@ -338,11 +413,6 @@ export default function EditResume() {
             </div>
           </div>
 
-          {/* Summary */}
-          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
-            <h2 className="text-left text-sm font-bold text-black uppercase tracking-widest mb-4">Summary</h2>
-            <textarea className={`${inputClass} resize-none`} name="summary" rows={4} value={formData.summary} onChange={setField('summary')} placeholder="Write a short professional summary..." />
-          </div>
 
           {/* Skills */}
           <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
@@ -392,8 +462,9 @@ export default function EditResume() {
                     <label className={labelClass}>Description</label>
                     <textarea className={`${inputClass} resize-none`} rows={3} value={exp.description} onChange={setExp(i, 'description')} placeholder="Describe your responsibilities…" />
                   </div>
-                  <div className="flex justify-end">
+                  <div className="flex justify-around">
                     <button type="button" onClick={() => removeExperience(i)} className="text-sm text-red-600 cursor-pointer border px-3  rounded-lg hover:bg-red-600 hover:text-white">Remove</button>
+                    <button type="button" onClick={() => generateWorkDescription(i)} className={` ${formData.experience[i].title && formData.experience[i].company ? '' : 'hidden'} ml-2 text-sm text-black hover:text-white hover:bg-black cursor-pointer border px-3 py-1 rounded-lg `}>{isDesLoading ? 'AI Generating...' : 'AI Generate Description'}</button>
                   </div>
                 </div>
               ))}
@@ -438,6 +509,14 @@ export default function EditResume() {
               ))}
             </div>
             <button type="button" onClick={addEducation} className="mt-4 w-full text-sm font-semibold text-black border border-dashed border-black/10 rounded-md py-2 hover:bg-black/5 transition">+ Add Education</button>
+          </div>
+
+          {/* Summary */}
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <h2 className="text-left text-sm font-bold text-black uppercase tracking-widest mb-4">Summary</h2>
+            <textarea className={`${inputClass} resize-none`} name="summary" rows={4} value={formData.summary} onChange={setField('summary')} placeholder="Write a short professional summary..." />
+            {/* add one button AI summary generator when skill,working experience, certificates or education, is added or updated, and when clicked it will generate a summary based on the provided information using the backend API and fill the summary field with the generated text */}
+            <button type="button" className='bg-black cursor-pointer text-white rounded-md py-1 px-2 mt-1' onClick={() => generateSummary()}>{isSumLoading ? 'AI Generating...' : 'AI Generate Summary'}</button>
           </div>
 
           {/* Certificates */}
@@ -492,9 +571,8 @@ export default function EditResume() {
               </div>
 
               {formData.summary && (
-                <div className="mb-7 text-left">{sectionHeading('Summary')}<p className="text-sm text-slate-700 leading-relaxed">{formData.summary}</p></div>
+                <div className="mb-7 text-left">{sectionHeading('Summary')}<ReactMarkDown >{formData.summary}</ReactMarkDown></div>
               )}
-
               {formData.skills.length > 0 && (
                 <div className="mb-7">{sectionHeading('Skills')}<div className="flex flex-wrap gap-2">{formData.skills.map((s, i) => (<span key={i} className="text-xs bg-slate-100 text-slate-700 px-3 py-1 rounded-full font-medium border border-slate-200">{s}</span>))}</div></div>
               )}

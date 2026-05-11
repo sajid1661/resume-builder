@@ -2,9 +2,10 @@ import React, { useContext } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShopContext } from '../Context/ShopContext.jsx';
 import axios from 'axios';
-import html2canvas from "html2canvas";
+import html2canvas from "html2canvas-pro";
 import jsPDF from "jspdf";
 import {toast} from 'react-toastify';
+import ReactMarkdown from 'react-markdown';
 
 export default function ResumeDetail() {
   const { resumeData, navigate, backendUrl, token, fetchResumes } = useContext(ShopContext);
@@ -55,40 +56,92 @@ export default function ResumeDetail() {
     }
   };
 
-  const handleDownload = async () => {
+//   const handleDownload = async () => {
+//   const element = document.getElementById("resume-preview");
+
+//   const canvas = await html2canvas(element, {
+//     backgroundColor: "#ffffff",
+
+//     onclone: (doc) => {
+//       const elements = doc.querySelectorAll("*");
+
+//       elements.forEach((el) => {
+//         // REMOVE problematic styles
+//         el.style.boxShadow = "none";
+
+//         // FORCE SAFE COLORS
+//         el.style.color = "#000000";
+//         el.style.backgroundColor = "#ffffff";
+//         el.style.borderColor = "#000000";
+//       });
+//     },
+//   });
+
+//   const imgData = canvas.toDataURL("image/png");
+
+//   const pdf = new jsPDF("p", "mm", "a4");
+
+//   const imgWidth = 210;
+//   const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+//   pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+//   pdf.save("resume.pdf");
+// }
+
+const handleDownload = async () => {
   const element = document.getElementById("resume-preview");
+  if (!element) return;
+
+  const A4_WIDTH_PX = 794;
+  const A4_HEIGHT_PX = 1123;
 
   const canvas = await html2canvas(element, {
     backgroundColor: "#ffffff",
+    scale: 2,
+    useCORS: true,
+    logging: false,
+    windowWidth: A4_WIDTH_PX,
+    windowHeight: A4_HEIGHT_PX,
 
     onclone: (doc) => {
-      const elements = doc.querySelectorAll("*");
+      const clonedElement = doc.getElementById("resume-preview");
 
-      elements.forEach((el) => {
-        // REMOVE problematic styles
+      clonedElement.style.width = `${A4_WIDTH_PX}px`;
+      clonedElement.style.height = `${A4_HEIGHT_PX}px`;
+      clonedElement.style.minHeight = `${A4_HEIGHT_PX}px`;
+      clonedElement.style.maxHeight = `${A4_HEIGHT_PX}px`;
+      clonedElement.style.overflow = "hidden";
+      clonedElement.style.boxSizing = "border-box";
+      clonedElement.style.margin = "0";
+      clonedElement.style.backgroundColor = "#ffffff";
+      clonedElement.style.boxShadow = "none";
+
+      clonedElement.querySelectorAll("*").forEach((el) => {
         el.style.boxShadow = "none";
-
-        // FORCE SAFE COLORS
-        el.style.color = "#000000";
-        el.style.backgroundColor = "#ffffff";
-        el.style.borderColor = "#000000";
+        el.style.textShadow = "none";
       });
     },
   });
 
   const imgData = canvas.toDataURL("image/png");
 
-  const pdf = new jsPDF("p", "mm", "a4");
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    compress: true,
+  });
 
-  const imgWidth = 210;
-  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  const pageWidth = pdf.internal.pageSize.getWidth();   // 210
+  const pageHeight = pdf.internal.pageSize.getHeight(); // 297
 
-  pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+  pdf.addImage(imgData, "PNG", 0, 0, pageWidth, pageHeight);
+
   pdf.save("resume.pdf");
-}
+};
 
   return (
-    <div className="max-w-4xl mx-auto max-[400px]:p-3 p-6">
+    <div className="max-w-4xl mx-auto max-[400px]:p-3 p-6 ">
       <div className=" flex gap-3 justify-between mb-4 ">
         <button onClick={() => navigate(-1)} className="w-fit text-lg font-semibold px-8 sm:px-11 py-2 bg-gray-100 text-black rounded-2xl cursor-pointer hover:bg-gray-300">← Back</button>
         <button onClick={handleDownload} className="w-fit text-lg font-semibold px-2 sm:px-6 py-2 bg-gray-100 text-black rounded-2xl cursor-pointer hover:bg-gray-300">

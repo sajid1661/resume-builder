@@ -15,6 +15,8 @@ const ShopContextProvider = (props) => {
   const [resumeData, setResumeData] = useState(null);
   const navigate = useNavigate();
 
+  
+
   const fetchResumes = async () => {
     try {
       const response = await axios.get(`${backendUrl}/api/resume/get-resumes`, { headers: { token } });

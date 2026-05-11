@@ -6,10 +6,10 @@ body {
 
 #root{
   max-width: 100%;
+  min-height: 100svh;
   margin: 0 auto;
   text-align: center;
   border-inline: 1px solid var(--border);
-  min-height: 100svh;
 }
 
 .prata-regular {
@@ -19,7 +19,14 @@ body {
 }
 
 
-
+/* #resume-preview {
+  height: fit-content;
+  background: white;
+  color: #111111;
+  padding: 32px;
+  box-sizing: border-box;
+  overflow: hidden;
+} */
 
 
 
